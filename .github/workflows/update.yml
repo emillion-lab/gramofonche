@@ -21,6 +21,8 @@ jobs:
       - run: pip install requests beautifulsoup4
 
       - name: Scrape приказки
+        env:
+          GRAMO_PROXY: "https://mvr-proxy.mihov-emil.workers.dev/mvrfetch?u="
         run: python3 gramofonche.py scrape --delay 1.5
 
       - name: Build index.html
