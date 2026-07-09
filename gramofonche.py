@@ -31,14 +31,23 @@ OUT_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html"
 S = requests.Session()
 S.headers.update(HEADERS)
 
+# Cloudflare Worker passthrough (chitanka блокира GitHub Actions IP-та, като МВР).
+# Пример: GRAMO_PROXY="https://mvr-proxy.mihov-emil.workers.dev/mvrfetch?u="
+PROXY = os.environ.get("GRAMO_PROXY", "")
+
 
 def get(url, retries=3):
+    from urllib.parse import quote
+    real = url
+    if PROXY and not url.lower().endswith(".mp3"):
+        real = PROXY + quote(url, safe="")
     for i in range(retries):
         try:
-            r = S.get(url, timeout=30)
+            r = S.get(real, timeout=45)
             if r.status_code == 200:
                 r.encoding = r.apparent_encoding or "utf-8"
                 return r
+            print(f"  ! HTTP {r.status_code}  {url}", file=sys.stderr)
         except requests.RequestException as e:
             print(f"  ! {e}", file=sys.stderr)
         time.sleep(2 * (i + 1))
