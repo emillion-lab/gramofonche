@@ -94,6 +94,7 @@ footer a{color:var(--label2)}
     <button class="chip" data-d="60-9999">над 1 час</button>
     <button class="chip" data-d="sort" id="sortBtn">↕ най-кратки първо</button>
   </div>
+  <div class="chips" id="secChips" style="display:none"></div>
   <div class="chips" id="kindChips">
     <button class="chip on" data-k="all">Всички видове</button>
     <button class="chip" data-k="театър">🎭 Театър</button>
@@ -137,6 +138,10 @@ const DATA = /*__DATA__*/null || {
 
 let durFilter="all", kindFilter="all", sortMode=0, queue=[], lastItems=[];
 const ALBUMS=DATA.albums.filter(a=>a.minutes&&(a.mp3||[]).length);
+let sectionFilter="all";
+const SECS=[...new Set(ALBUMS.map(a=>a.section))];
+const MULTI_SEC=SECS.length>1;
+const SEC_LABELS={prikazki:"📚 Приказки",pesnicki:"🎶 Песнички",zagolemi:"🎙 За възрастни",bnr:"📻 БНР"};
 const kindGroup=a=>{
   const k=(a.kind||"").toLowerCase();
   if(k.includes("театър"))return "театър";
@@ -156,6 +161,7 @@ function qualityNice(q){
 function render(){
   const q=$("#q").value.toLowerCase().trim();
   let items=ALBUMS.filter(a=>{
+    if(sectionFilter!=="all" && a.section!==sectionFilter) return false;
     if(kindFilter!=="all" && kindGroup(a)!==kindFilter) return false;
     if(q){
       const hay=(a.title+" "+(a.author||"")+" "+(a.tracks||[]).join(" ")).toLowerCase();
@@ -186,6 +192,7 @@ function render(){
     const discCls=m==null?"q":(m>60?"long":"");
     const mLbl=m==null?"?":m;
     const bits=[];
+    if(MULTI_SEC) bits.push(SEC_LABELS[a.section]||a.section);
     if(a.author) bits.push(a.author);
     if(a.kind) bits.push(a.kind);
     if(a.year) bits.push(a.year);
@@ -267,6 +274,21 @@ document.querySelectorAll("#kindChips .chip").forEach(c=>{
     render();
   };
 });
+
+if(MULTI_SEC){
+  const row=$("#secChips");
+  row.style.display="flex";
+  row.innerHTML=`<button class="chip on" data-s="all">Всички раздели</button>`
+    +SECS.map(s=>`<button class="chip" data-s="${s}">${SEC_LABELS[s]||s}</button>`).join("");
+  row.querySelectorAll(".chip").forEach(c=>{
+    c.onclick=()=>{
+      row.querySelectorAll(".chip").forEach(x=>x.classList.remove("on"));
+      c.classList.add("on");
+      sectionFilter=c.dataset.s;
+      render();
+    };
+  });
+}
 
 $("#gen").textContent=DATA.generated||"";
 render();
