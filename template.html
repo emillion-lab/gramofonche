@@ -106,6 +106,7 @@ footer a{color:var(--label2)}
     <div id="ptitle"></div>
     <audio id="paudio" controls preload="none"></audio>
   </div>
+  <button class="pclose" id="pnext" title="следваща">⏭</button>
   <button class="pclose" id="pclose">✕</button>
 </div>
 
@@ -127,7 +128,7 @@ const DATA = /*__DATA__*/null || {
   ]
 };
 
-let durFilter="all", sortAsc=true;
+let durFilter="all", sortAsc=true, queue=[];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
 
@@ -159,6 +160,10 @@ function render(){
   const totMin=items.reduce((s,a)=>s+(a.minutes||0),0);
   $("#stats").textContent=`${items.length} албума · общо ${Math.floor(totMin/60)} ч ${totMin%60} мин`;
   $("#empty").style.display=items.length?"none":"block";
+  queue=items.flatMap(a=>{
+    const m=(a.mp3||[]);
+    return m.map(t=>({u:t.url, t:m.length>1?t.name.replace(/\.mp3$/i,""):a.title}));
+  });
   $("#list").innerHTML=items.map((a,i)=>{
     const m=a.minutes;
     const discCls=m==null?"q":(m>60?"long":"");
@@ -210,15 +215,23 @@ document.querySelectorAll("#durChips .chip").forEach(c=>{
 });
 // Плейър — стриймва директно от Грамофончето
 const player=$("#player"),paudio=$("#paudio"),ptitle=$("#ptitle");
-document.addEventListener("click",e=>{
-  const b=e.target.closest(".play,.tr");
-  if(!b)return;
+function playTrack(u,t){
   player.style.display="flex";
   document.body.style.paddingBottom="90px";
-  ptitle.textContent=b.dataset.t;
-  paudio.src=b.dataset.u;
+  ptitle.textContent=t;
+  paudio.src=u;
   paudio.play();
+}
+function playNext(){
+  const i=queue.findIndex(x=>x.u===paudio.src);
+  if(i>=0 && i+1<queue.length) playTrack(queue[i+1].u, queue[i+1].t);
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".play,.tr");
+  if(b) playTrack(b.dataset.u, b.dataset.t);
 });
+paudio.addEventListener("ended",playNext);
+$("#pnext").onclick=playNext;
 paudio.addEventListener("play",()=>player.classList.add("spin"));
 paudio.addEventListener("pause",()=>player.classList.remove("spin"));
 $("#pclose").onclick=()=>{paudio.pause();player.style.display="none";document.body.style.paddingBottom="0"};
