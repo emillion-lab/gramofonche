@@ -59,6 +59,23 @@ main{max-width:760px;margin:0 auto;padding:12px}
 footer{color:#F3ECD8;opacity:.6;text-align:center;font-size:.75em;padding:20px}
 footer a{color:var(--label2)}
 @media(min-width:560px){.info h2{font-size:1.1em}}
+.play{background:var(--label);color:#FFF4DC;border:0;border-radius:16px;
+  padding:6px 13px;font-weight:700;font-size:.95em;cursor:pointer}
+.play:active{transform:scale(.96)}
+.tr{color:var(--label);cursor:pointer;text-decoration:underline dotted}
+#player{position:fixed;bottom:0;left:0;right:0;display:none;gap:12px;align-items:center;
+  background:#161613;padding:10px 14px;z-index:9;box-shadow:0 -4px 12px rgba(0,0,0,.4)}
+#player .pdisc{flex:0 0 44px;width:44px;height:44px;border-radius:50%;position:relative;
+  background:radial-gradient(circle at 35% 35%, #3a3a38 0 8%, #191917 60%, #2c2c2a 100%);
+  box-shadow:inset 0 0 0 2px #000}
+#player .pdisc::after{content:"";position:absolute;inset:14px;border-radius:50%;background:var(--label)}
+#player.spin .pdisc{animation:rot 3s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+#player .pinfo{flex:1;min-width:0}
+#player #ptitle{color:#F3ECD8;font-size:.82em;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;margin-bottom:4px}
+#player audio{width:100%;height:34px}
+#player .pclose{background:none;border:0;color:#F3ECD8;font-size:1.3em;cursor:pointer;opacity:.7}
 </style>
 </head>
 <body>
@@ -82,6 +99,15 @@ footer a{color:var(--label2)}
 
 <main id="list"></main>
 <div class="empty" id="empty" style="display:none">Нищо не е намерено.</div>
+
+<div id="player">
+  <div class="pdisc"></div>
+  <div class="pinfo">
+    <div id="ptitle"></div>
+    <audio id="paudio" controls preload="none"></audio>
+  </div>
+  <button class="pclose" id="pclose">✕</button>
+</div>
 
 <footer>
   Каталог с метаданни и линкове. Записите се слушат в
@@ -12309,6 +12335,7 @@ const DATA = {
 
 let durFilter="all", sortAsc=true;
 const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
 
 function qualityNice(q){
   if(!q) return "";
@@ -12349,16 +12376,22 @@ function render(){
     if(a.quality) bits.push("качество: <b>"+qualityNice(a.quality)+"</b>");
     if(a.mb) bits.push(Math.round(a.mb)+" MB");
     const trk=(a.tracks||[]);
+    const mp3=(a.mp3||[]);
     return `<article class="album">
       <div class="disc ${discCls}"><div class="lbl">${mLbl}<small>мин</small></div></div>
       <div class="info">
-        <h2>${a.title}</h2>
+        <h2>${esc(a.title)}</h2>
         <div class="sub">${bits.join(" · ")}</div>
         <div class="row">
-          <a href="${a.url}" target="_blank" rel="noopener">▶ Слушай в Грамофонче</a>
-          ${trk.length?`<span class="tgl" data-i="${i}">${trk.length} записа</span>`:""}
+          ${mp3.length?`<button class="play" data-u="${esc(mp3[0].url)}" data-t="${esc(a.title)}">▶ Пусни</button>`:""}
+          <a href="${a.url}" target="_blank" rel="noopener">↗ Грамофонче</a>
+          ${trk.length>1?`<span class="tgl" data-i="${i}">${trk.length} записа</span>`:""}
         </div>
-        ${trk.length?`<div class="tracks" id="t${i}">${trk.map(t=>`<span>${t}</span>`).join("")}</div>`:""}
+        ${trk.length>1?`<div class="tracks" id="t${i}">${
+          mp3.length>1
+            ? mp3.map(t=>{const n=t.name.replace(/\.mp3$/i,"");return `<span class="tr" data-u="${esc(t.url)}" data-t="${esc(n)}">${esc(n)}</span>`}).join("")
+            : trk.map(t=>`<span>${esc(t)}</span>`).join("")
+        }</div>`:""}
       </div>
     </article>`;
   }).join("");
@@ -12381,6 +12414,21 @@ document.querySelectorAll("#durChips .chip").forEach(c=>{
     render();
   };
 });
+// Плейър — стриймва директно от Грамофончето
+const player=$("#player"),paudio=$("#paudio"),ptitle=$("#ptitle");
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".play,.tr");
+  if(!b)return;
+  player.style.display="flex";
+  document.body.style.paddingBottom="90px";
+  ptitle.textContent=b.dataset.t;
+  paudio.src=b.dataset.u;
+  paudio.play();
+});
+paudio.addEventListener("play",()=>player.classList.add("spin"));
+paudio.addEventListener("pause",()=>player.classList.remove("spin"));
+$("#pclose").onclick=()=>{paudio.pause();player.style.display="none";document.body.style.paddingBottom="0"};
+
 $("#gen").textContent=DATA.generated||"";
 render();
 </script>
