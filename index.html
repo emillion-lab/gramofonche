@@ -63,21 +63,28 @@ footer a{color:var(--label2)}
   padding:6px 13px;font-weight:700;font-size:.95em;cursor:pointer}
 .play:active{transform:scale(.96)}
 .tr{color:var(--label);cursor:pointer;text-decoration:underline dotted}
-#player{position:fixed;bottom:0;left:0;right:0;display:none;gap:12px;align-items:center;
-  background:#161613;padding:10px 14px;z-index:9;box-shadow:0 -4px 12px rgba(0,0,0,.4)}
-#player .pdisc{flex:0 0 44px;width:44px;height:44px;border-radius:50%;position:relative;
+#player{position:fixed;bottom:0;left:0;right:0;display:none;flex-direction:column;gap:2px;
+  background:#161613;padding:10px 14px 8px;z-index:9;box-shadow:0 -4px 12px rgba(0,0,0,.4)}
+#player .ptop{display:flex;align-items:center;gap:10px}
+#player .ptop #ptitle{flex:1;min-width:0}
+#player .pdisc{flex:0 0 36px;width:36px;height:36px;border-radius:50%;position:relative;
   background:radial-gradient(circle at 35% 35%, #3a3a38 0 8%, #191917 60%, #2c2c2a 100%);
   box-shadow:inset 0 0 0 2px #000}
-#player .pdisc::after{content:"";position:absolute;inset:14px;border-radius:50%;background:var(--label)}
+#player .pdisc::after{content:"";position:absolute;inset:11px;border-radius:50%;background:var(--label)}
 #player.spin .pdisc{animation:rot 3s linear infinite}
 @keyframes rot{to{transform:rotate(360deg)}}
 #player .pinfo{flex:1;min-width:0}
-#player #ptitle{color:#F3ECD8;font-size:.82em;white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;margin-bottom:4px}
-#player .prow{display:flex;align-items:center;gap:4px}
-#player .pbtn{background:none;border:0;color:#F3ECD8;font-size:1.15em;cursor:pointer;padding:2px 5px}
-#player input[type=range]{flex:1;min-width:0;accent-color:var(--label2);height:28px;margin:0}
-#player .ptime{color:#F3ECD8;opacity:.7;font-size:.7em;white-space:nowrap}
+#player #ptitle{color:#F3ECD8;font-size:.85em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#player .prow{display:flex;align-items:center;gap:14px}
+#player .pbtn{background:none;border:0;color:#F3ECD8;font-size:1.35em;cursor:pointer;padding:4px 8px}
+#player input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:32px;
+  background:transparent;margin:0;display:block}
+#player input[type=range]::-webkit-slider-runnable-track{height:6px;background:#3E3E3A;border-radius:3px}
+#player input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;
+  border-radius:50%;background:var(--label2);margin-top:-10px;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+#player input[type=range]::-moz-range-track{height:6px;background:#3E3E3A;border-radius:3px}
+#player input[type=range]::-moz-range-thumb{width:26px;height:26px;border:0;border-radius:50%;background:var(--label2)}
+#player .ptime{color:#F3ECD8;opacity:.7;font-size:.75em;white-space:nowrap;margin-left:auto}
 #player .pclose{background:none;border:0;color:#F3ECD8;font-size:1.3em;cursor:pointer;opacity:.7}
 </style>
 </head>
@@ -113,20 +120,20 @@ footer a{color:var(--label2)}
 <div class="empty" id="empty" style="display:none">Нищо не е намерено.</div>
 
 <div id="player">
-  <div class="pdisc"></div>
-  <div class="pinfo">
+  <div class="ptop">
+    <div class="pdisc"></div>
     <div id="ptitle"></div>
-    <div class="prow">
-      <button class="pbtn" id="ppp">▶</button>
-      <button class="pbtn" id="pback">↺30</button>
-      <input type="range" id="pseek" min="0" max="100" step="0.1" value="0">
-      <button class="pbtn" id="pfwd">30↻</button>
-      <span class="ptime" id="ptime">0:00</span>
-    </div>
-    <audio id="paudio" preload="none" style="display:none"></audio>
+    <button class="pclose" id="pclose">✕</button>
   </div>
-  <button class="pclose" id="pnext" title="следваща">⏭</button>
-  <button class="pclose" id="pclose">✕</button>
+  <input type="range" id="pseek" min="0" max="100" step="0.1" value="0">
+  <div class="prow">
+    <button class="pbtn" id="ppp">▶</button>
+    <button class="pbtn" id="pback">↺30</button>
+    <button class="pbtn" id="pfwd">30↻</button>
+    <button class="pbtn" id="pnext" title="следваща">⏭</button>
+    <span class="ptime" id="ptime">0:00</span>
+  </div>
+  <audio id="paudio" preload="none" style="display:none"></audio>
 </div>
 
 <footer>
@@ -12458,9 +12465,11 @@ document.querySelectorAll("#durChips .chip").forEach(c=>{
 });
 // Плейър — стриймва директно от Грамофончето
 const player=$("#player"),paudio=$("#paudio"),ptitle=$("#ptitle");
+let curUrl=null;
 function playTrack(u,t){
+  curUrl=u;
   player.style.display="flex";
-  document.body.style.paddingBottom="90px";
+  document.body.style.paddingBottom="150px";
   ptitle.textContent=t;
   pseek.value=0;
   paudio.src=u;
@@ -12469,7 +12478,7 @@ function playTrack(u,t){
     navigator.mediaSession.metadata=new MediaMetadata({title:t,artist:"Грамофонче",album:"Приказки"});
 }
 function playNext(){
-  const i=queue.findIndex(x=>x.u===paudio.src);
+  const i=queue.findIndex(x=>x.u===curUrl);
   if(i>=0 && i+1<queue.length) playTrack(queue[i+1].u, queue[i+1].t);
 }
 document.addEventListener("click",e=>{
