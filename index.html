@@ -100,6 +100,7 @@ footer a{color:var(--label2)}
     <button class="chip" data-k="театър">🎭 Театър</button>
     <button class="chip" data-k="прочит">📖 Прочит</button>
     <button class="chip" data-k="мюзикъл">🎵 Мюзикъл</button>
+    <button class="chip" data-k="поредица">📻 Поредици</button>
     <button class="chip" data-k="rand" id="randBtn">🎲 Случайна</button>
   </div>
   <div class="meta-line" id="stats"></div>
@@ -12355,6 +12356,7 @@ const kindGroup=a=>{
   if(k.includes("мюзикъл"))return "мюзикъл";
   return "";
 };
+const isSeries=a=>(a.mp3||[]).length>=15;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
 
@@ -12368,7 +12370,8 @@ function render(){
   const q=$("#q").value.toLowerCase().trim();
   let items=ALBUMS.filter(a=>{
     if(sectionFilter!=="all" && a.section!==sectionFilter) return false;
-    if(kindFilter!=="all" && kindGroup(a)!==kindFilter) return false;
+    if(kindFilter==="поредица"){ if(!isSeries(a)) return false; }
+    else if(kindFilter!=="all" && kindGroup(a)!==kindFilter) return false;
     if(q){
       const hay=(a.title+" "+(a.author||"")+" "+(a.tracks||[]).join(" ")).toLowerCase();
       if(!hay.includes(q)) return false;
