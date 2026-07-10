@@ -74,7 +74,10 @@ footer a{color:var(--label2)}
 #player .pinfo{flex:1;min-width:0}
 #player #ptitle{color:#F3ECD8;font-size:.82em;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;margin-bottom:4px}
-#player audio{width:100%;height:34px}
+#player .prow{display:flex;align-items:center;gap:4px}
+#player .pbtn{background:none;border:0;color:#F3ECD8;font-size:1.15em;cursor:pointer;padding:2px 5px}
+#player input[type=range]{flex:1;min-width:0;accent-color:var(--label2);height:28px;margin:0}
+#player .ptime{color:#F3ECD8;opacity:.7;font-size:.7em;white-space:nowrap}
 #player .pclose{background:none;border:0;color:#F3ECD8;font-size:1.3em;cursor:pointer;opacity:.7}
 </style>
 </head>
@@ -113,7 +116,14 @@ footer a{color:var(--label2)}
   <div class="pdisc"></div>
   <div class="pinfo">
     <div id="ptitle"></div>
-    <audio id="paudio" controls preload="none"></audio>
+    <div class="prow">
+      <button class="pbtn" id="ppp">▶</button>
+      <button class="pbtn" id="pback">↺30</button>
+      <input type="range" id="pseek" min="0" max="100" step="0.1" value="0">
+      <button class="pbtn" id="pfwd">30↻</button>
+      <span class="ptime" id="ptime">0:00</span>
+    </div>
+    <audio id="paudio" preload="none" style="display:none"></audio>
   </div>
   <button class="pclose" id="pnext" title="следваща">⏭</button>
   <button class="pclose" id="pclose">✕</button>
@@ -246,8 +256,11 @@ function playTrack(u,t){
   player.style.display="flex";
   document.body.style.paddingBottom="90px";
   ptitle.textContent=t;
+  pseek.value=0;
   paudio.src=u;
   paudio.play();
+  if("mediaSession" in navigator)
+    navigator.mediaSession.metadata=new MediaMetadata({title:t,artist:"Грамофонче",album:"Приказки"});
 }
 function playNext(){
   const i=queue.findIndex(x=>x.u===paudio.src);
@@ -259,8 +272,32 @@ document.addEventListener("click",e=>{
 });
 paudio.addEventListener("ended",playNext);
 $("#pnext").onclick=playNext;
-paudio.addEventListener("play",()=>player.classList.add("spin"));
-paudio.addEventListener("pause",()=>player.classList.remove("spin"));
+const pseek=$("#pseek"),ptime=$("#ptime"),ppp=$("#ppp");
+const fmt=s=>{s=Math.max(0,s|0);const h=(s/3600)|0,m=((s%3600)/60)|0,x=String(s%60).padStart(2,"0");
+  return h?`${h}:${String(m).padStart(2,"0")}:${x}`:`${m}:${x}`};
+let seeking=false;
+paudio.addEventListener("timeupdate",()=>{
+  if(!seeking && paudio.duration) pseek.value=paudio.currentTime/paudio.duration*100;
+  ptime.textContent=fmt(paudio.currentTime)+(paudio.duration?" / "+fmt(paudio.duration):"");
+});
+pseek.addEventListener("input",()=>{
+  seeking=true;
+  if(paudio.duration) ptime.textContent=fmt(pseek.value/100*paudio.duration)+" / "+fmt(paudio.duration);
+});
+pseek.addEventListener("change",()=>{
+  if(paudio.duration) paudio.currentTime=pseek.value/100*paudio.duration;
+  seeking=false;
+});
+ppp.onclick=()=>paudio.paused?paudio.play():paudio.pause();
+$("#pback").onclick=()=>{paudio.currentTime=Math.max(0,paudio.currentTime-30)};
+$("#pfwd").onclick=()=>{if(paudio.duration)paudio.currentTime=Math.min(paudio.duration,paudio.currentTime+30)};
+paudio.addEventListener("play",()=>{ppp.textContent="⏸";player.classList.add("spin")});
+paudio.addEventListener("pause",()=>{ppp.textContent="▶";player.classList.remove("spin")});
+if("mediaSession" in navigator){
+  navigator.mediaSession.setActionHandler("nexttrack",playNext);
+  navigator.mediaSession.setActionHandler("seekbackward",()=>{paudio.currentTime=Math.max(0,paudio.currentTime-30)});
+  navigator.mediaSession.setActionHandler("seekforward",()=>{paudio.currentTime+=30});
+}
 $("#pclose").onclick=()=>{paudio.pause();player.style.display="none";document.body.style.paddingBottom="0"};
 
 document.querySelectorAll("#kindChips .chip").forEach(c=>{
