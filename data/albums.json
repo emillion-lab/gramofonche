@@ -1,5 +1,5 @@
 {
- "generated": "2026-07-13 07:59",
+ "generated": "2026-07-20 07:25",
  "source": "https://gramofonche.chitanka.info",
  "albums": [
   {
@@ -1677,6 +1677,26 @@
     {
      "name": "glupaviiat.hans--bam6469.mp3",
      "url": "https://gramofonche.chitanka.info/prikazki/glupaviiat.hans--bam6469/glupaviiat.hans--bam6469.mp3"
+    }
+   ]
+  },
+  {
+   "url": "https://gramofonche.chitanka.info/prikazki/gnomobil--baa12068/",
+   "section": "prikazki",
+   "title": "Гномобил",
+   "minutes": 41,
+   "mb": 50.0,
+   "author": "Ъптон Синклер",
+   "kind": "театър/драматизация",
+   "quality": "?/-",
+   "year": 1987,
+   "tracks": [
+    "gnomobil--baa12068"
+   ],
+   "mp3": [
+    {
+     "name": "gnomobil--baa12068.mp3",
+     "url": "https://gramofonche.chitanka.info/prikazki/gnomobil--baa12068/gnomobil--baa12068.mp3"
     }
    ]
   },
