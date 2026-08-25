@@ -1,0 +1,30 @@
+{
+  "id": "./",
+  "name": "Грамофонче — каталог по дължина",
+  "short_name": "Грамофонче",
+  "description": "Приказки, песнички и радиотеатър от БалканТон, подредени по дължина. Работи офлайн.",
+  "lang": "bg",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#1B4A44",
+  "theme_color": "#1B4A44",
+  "categories": ["entertainment", "education", "music"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
