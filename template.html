@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Грамофонче — каталог по дължина</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B4A44">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Грамофонче">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
 <style>
 :root{
   --bg:#1B4A44;        /* тъмнозелен картон на стара плоча */
@@ -13,6 +21,7 @@
   --label2:#E8A93B;    /* горчица */
   --muted:#6E6A5C;
   --line:#D9CDAE;
+  --ok:#2E7D32;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);
@@ -47,7 +56,7 @@ main{max-width:760px;margin:0 auto;padding:12px}
 .info h2{margin:0 0 3px;font-family:Georgia,serif;font-size:1.02em;line-height:1.3}
 .info .sub{color:var(--muted);font-size:.8em}
 .info .sub b{color:var(--label);font-weight:600}
-.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:7px;font-size:.8em}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:7px;font-size:.8em;align-items:center}
 .row a{color:var(--label);text-decoration:none;font-weight:600}
 .row .tgl{color:var(--muted);cursor:pointer;text-decoration:underline dotted}
 .tracks{display:none;margin:8px 0 0;padding:8px 0 0;border-top:1px dashed var(--line);
@@ -63,6 +72,13 @@ footer a{color:var(--label2)}
   padding:6px 13px;font-weight:700;font-size:.95em;cursor:pointer}
 .play:active{transform:scale(.96)}
 .tr{color:var(--label);cursor:pointer;text-decoration:underline dotted}
+.dl{background:none;border:1.5px solid var(--muted);color:var(--muted);border-radius:16px;
+  padding:5px 11px;font-size:.9em;cursor:pointer;white-space:nowrap}
+.dl.on{border-color:var(--ok);color:var(--ok);font-weight:700}
+.dl.busy{opacity:.55}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:180px;background:#161613;
+  color:#F3ECD8;padding:10px 16px;border-radius:20px;font-size:.85em;z-index:20;display:none;
+  max-width:88%;text-align:center;box-shadow:0 3px 12px rgba(0,0,0,.5)}
 #player{position:fixed;bottom:0;left:0;right:0;display:none;flex-direction:column;gap:2px;
   background:#161613;padding:10px 14px 8px;z-index:9;box-shadow:0 -4px 12px rgba(0,0,0,.4)}
 #player .ptop{display:flex;align-items:center;gap:10px}
@@ -75,8 +91,9 @@ footer a{color:var(--label2)}
 @keyframes rot{to{transform:rotate(360deg)}}
 #player .pinfo{flex:1;min-width:0}
 #player #ptitle{color:#F3ECD8;font-size:.85em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#player .prow{display:flex;align-items:center;gap:14px}
-#player .pbtn{background:none;border:0;color:#F3ECD8;font-size:1.35em;cursor:pointer;padding:4px 8px}
+#player #ptitle .off{color:var(--label2);font-weight:700}
+#player .prow{display:flex;align-items:center;gap:10px}
+#player .pbtn{background:none;border:0;color:#F3ECD8;font-size:1.3em;cursor:pointer;padding:4px 7px}
 #player input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:32px;
   background:transparent;margin:0;display:block}
 #player input[type=range]::-webkit-slider-runnable-track{height:6px;background:#3E3E3A;border-radius:3px}
@@ -107,6 +124,7 @@ footer a{color:var(--label2)}
   <div class="chips" id="secChips" style="display:none"></div>
   <div class="chips" id="kindChips">
     <button class="chip on" data-k="all">Всички видове</button>
+    <button class="chip" data-k="offline">📥 Свалени</button>
     <button class="chip" data-k="театър">🎭 Театър</button>
     <button class="chip" data-k="прочит">📖 Прочит</button>
     <button class="chip" data-k="мюзикъл">🎵 Мюзикъл</button>
@@ -119,6 +137,8 @@ footer a{color:var(--label2)}
 <main id="list"></main>
 <div class="empty" id="empty" style="display:none">Нищо не е намерено.</div>
 
+<div id="toast"></div>
+
 <div id="player">
   <div class="ptop">
     <div class="pdisc"></div>
@@ -127,18 +147,20 @@ footer a{color:var(--label2)}
   </div>
   <input type="range" id="pseek" min="0" max="100" step="0.1" value="0">
   <div class="prow">
+    <button class="pbtn" id="pprev" title="предишна">⏮</button>
     <button class="pbtn" id="ppp">▶</button>
     <button class="pbtn" id="pback">↺30</button>
     <button class="pbtn" id="pfwd">30↻</button>
     <button class="pbtn" id="pnext" title="следваща">⏭</button>
     <span class="ptime" id="ptime">0:00</span>
   </div>
-  <audio id="paudio" preload="none" style="display:none"></audio>
+  <audio id="paudio" preload="auto" playsinline style="display:none"></audio>
 </div>
 
 <footer>
   Каталог с метаданни и линкове. Записите се слушат в
   <a href="https://gramofonche.chitanka.info/">Грамофончето</a> (Свилен Добрев / chitanka.info).<br>
+  Свалените записи стоят само на това устройство, за лична употреба.<br>
   Обновено: <span id="gen"></span>
 </footer>
 
@@ -171,6 +193,78 @@ const isSeries=a=>(a.mp3||[]).length>=15;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
 
+/* ---------- PWA: инсталация + офлайн ---------- */
+const AUDIO_CACHE="gramo-audio-v1";
+let cachedUrls=new Set();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("sw.js").catch(e=>console.warn("SW:",e));
+  });
+}
+if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+
+let toastT=null;
+function toast(msg){
+  const t=$("#toast");
+  t.textContent=msg; t.style.display="block";
+  clearTimeout(toastT); toastT=setTimeout(()=>{t.style.display="none"},3200);
+}
+
+async function refreshCached(){
+  if(!("caches" in window)) return;
+  try{
+    const c=await caches.open(AUDIO_CACHE);
+    const keys=await c.keys();
+    cachedUrls=new Set(keys.map(r=>r.url));
+  }catch(e){}
+}
+const albumCached=a=>{
+  const m=a.mp3||[];
+  return m.length>0 && m.every(t=>cachedUrls.has(t.url));
+};
+
+async function fetchForCache(url){
+  try{
+    const r=await fetch(url,{mode:"cors",credentials:"omit"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    return r;
+  }catch(e){
+    // chitanka не праща CORS хедъри → opaque отговор; кешира се, но не е четим
+    return await fetch(url,{mode:"no-cors",credentials:"omit"});
+  }
+}
+
+async function toggleOffline(a,btn){
+  if(!("caches" in window)){ toast("Браузърът не поддържа офлайн кеш"); return; }
+  const c=await caches.open(AUDIO_CACHE), m=a.mp3||[];
+  if(albumCached(a)){
+    for(const t of m){ try{await c.delete(t.url)}catch(e){} cachedUrls.delete(t.url); }
+    btn.className="dl"; btn.textContent="⤓ Свали";
+    toast("Изтрито от телефона");
+    return;
+  }
+  btn.className="dl busy";
+  let n=0;
+  for(const t of m){
+    n++;
+    btn.textContent="↓ "+n+"/"+m.length;
+    if(cachedUrls.has(t.url)) continue;
+    try{
+      const r=await fetchForCache(t.url);
+      await c.put(t.url,r);
+      cachedUrls.add(t.url);
+    }catch(e){
+      btn.className="dl"; btn.textContent="⤓ Свали";
+      toast("Свалянето спря: "+(e.message||"грешка"));
+      return;
+    }
+  }
+  btn.className="dl on"; btn.textContent="✓ На телефона";
+  toast("Готово — тази приказка вече върви и без мрежа");
+}
+
+/* ---------- каталог ---------- */
 function qualityNice(q){
   if(!q) return "";
   return q.replace(/\+/g,"хубаво").replace(/~/g,"средно").replace(/-/g,"слабо").replace(/\?/g,"?")
@@ -182,6 +276,7 @@ function render(){
   let items=ALBUMS.filter(a=>{
     if(sectionFilter!=="all" && a.section!==sectionFilter) return false;
     if(kindFilter==="поредица"){ if(!isSeries(a)) return false; }
+    else if(kindFilter==="offline"){ if(!albumCached(a)) return false; }
     else if(kindFilter!=="all" && kindGroup(a)!==kindFilter) return false;
     if(q){
       const hay=(a.title+" "+(a.author||"")+" "+(a.tracks||[]).join(" ")).toLowerCase();
@@ -201,7 +296,9 @@ function render(){
   });
   lastItems=items;
   const totMin=items.reduce((s,a)=>s+(a.minutes||0),0);
-  $("#stats").textContent=`${items.length} албума · общо ${Math.floor(totMin/60)} ч ${totMin%60} мин`;
+  const offN=items.filter(albumCached).length;
+  $("#stats").textContent=items.length+" албума · общо "+Math.floor(totMin/60)+" ч "+(totMin%60)+" мин"
+    +(offN?" · "+offN+" свалени":"");
   $("#empty").style.display=items.length?"none":"block";
   queue=items.flatMap(a=>{
     const m=(a.mp3||[]);
@@ -220,6 +317,7 @@ function render(){
     if(a.mb) bits.push(Math.round(a.mb)+" MB");
     const trk=(a.tracks||[]);
     const mp3=(a.mp3||[]);
+    const off=albumCached(a);
     return `<article class="album">
       <div class="disc ${discCls}"><div class="lbl">${mLbl}<small>мин</small></div></div>
       <div class="info">
@@ -227,6 +325,7 @@ function render(){
         <div class="sub">${bits.join(" · ")}</div>
         <div class="row">
           ${mp3.length?`<button class="play" data-u="${esc(mp3[0].url)}" data-t="${esc(a.title)}">▶ Пусни</button>`:""}
+          ${mp3.length?`<button class="dl${off?" on":""}" data-dl="${i}">${off?"✓ На телефона":"⤓ Свали"}</button>`:""}
           <a href="${a.url}" target="_blank" rel="noopener">↗ Грамофонче</a>
           ${trk.length>1?`<span class="tgl" data-i="${i}">${trk.length} записа</span>`:""}
         </div>
@@ -257,37 +356,125 @@ document.querySelectorAll("#durChips .chip").forEach(c=>{
     render();
   };
 });
-// Плейър — стриймва директно от Грамофончето
+
+/* ---------- плейър ----------
+   Опашката се замразява в момента на пускане (playQueue), за да не се къса
+   авто-преходът, ако междувременно смениш филтъра.
+   При мрежов срив: retry с нарастващо изчакване и връщане на същата секунда. */
 const player=$("#player"),paudio=$("#paudio"),ptitle=$("#ptitle");
-let curUrl=null;
-function playTrack(u,t){
-  curUrl=u;
+const pseek=$("#pseek"),ptime=$("#ptime"),ppp=$("#ppp");
+let curUrl=null, curTitle="", playQueue=[], curIdx=-1;
+let wantPlaying=false, retries=0, retrying=false, pendingSeek=0, stallT=null, lastPos=0;
+
+function setMeta(t,offline){
+  if(!("mediaSession" in navigator)) return;
+  try{
+    navigator.mediaSession.metadata=new MediaMetadata({
+      title:t, artist:"Грамофонче", album:"Приказки",
+      artwork:[{src:"icon.svg",sizes:"512x512",type:"image/svg+xml"}]
+    });
+  }catch(e){}
+}
+function updatePosition(){
+  if(!("mediaSession" in navigator)||!navigator.mediaSession.setPositionState) return;
+  if(!isFinite(paudio.duration)||paudio.duration<=0) return;
+  try{
+    navigator.mediaSession.setPositionState({
+      duration:paudio.duration,
+      playbackRate:paudio.playbackRate||1,
+      position:Math.min(Math.max(paudio.currentTime,0),paudio.duration)
+    });
+  }catch(e){}
+}
+function safePlay(){
+  wantPlaying=true;
+  const p=paudio.play();
+  if(p&&p.catch) p.catch(err=>{
+    if(err&&err.name==="NotAllowedError"){
+      ppp.textContent="▶";
+      toast("Натисни ▶, за да продължи");
+      wantPlaying=false;
+    }else{
+      scheduleRetry();
+    }
+  });
+}
+function scheduleRetry(){
+  if(!wantPlaying||retrying) return;
+  if(retries>=8){ toast("Няма връзка — възпроизвеждането спря"); wantPlaying=false; return; }
+  retrying=true;
+  const wait=Math.min(30000,1000*Math.pow(2,retries++));
+  pendingSeek=paudio.currentTime||lastPos||pendingSeek;
+  setTimeout(()=>{
+    retrying=false;
+    if(!wantPlaying) return;
+    try{ paudio.load(); }catch(e){}
+    safePlay();
+  },wait);
+}
+function armStallWatch(){
+  clearTimeout(stallT);
+  stallT=setTimeout(()=>{
+    if(wantPlaying && !paudio.paused && paudio.readyState<3) scheduleRetry();
+  },15000);
+}
+paudio.addEventListener("error",scheduleRetry);
+paudio.addEventListener("stalled",()=>{ if(wantPlaying) armStallWatch(); });
+paudio.addEventListener("waiting",()=>{ if(wantPlaying) armStallWatch(); });
+paudio.addEventListener("progress",()=>clearTimeout(stallT));
+paudio.addEventListener("playing",()=>{ retries=0; clearTimeout(stallT); });
+paudio.addEventListener("loadedmetadata",()=>{
+  if(pendingSeek>0 && isFinite(paudio.duration)){
+    try{ paudio.currentTime=Math.min(pendingSeek,Math.max(0,paudio.duration-1)); }catch(e){}
+    pendingSeek=0;
+  }
+  updatePosition();
+});
+
+function playTrack(u,t,q,i){
+  if(Array.isArray(q)){ playQueue=q; curIdx=(typeof i==="number")?i:-1; }
+  curUrl=u; curTitle=t; retries=0; pendingSeek=0; lastPos=0;
   player.style.display="flex";
-  document.body.style.paddingBottom="150px";
-  ptitle.textContent=t;
+  document.body.style.paddingBottom="170px";
+  ptitle.innerHTML=(cachedUrls.has(u)?'<span class="off">⤓ </span>':"")+esc(t);
   pseek.value=0;
   paudio.src=u;
-  paudio.play();
-  if("mediaSession" in navigator)
-    navigator.mediaSession.metadata=new MediaMetadata({title:t,artist:"Грамофонче",album:"Приказки"});
+  safePlay();
+  setMeta(t);
 }
-function playNext(){
-  const i=queue.findIndex(x=>x.u===curUrl);
-  if(i>=0 && i+1<queue.length) playTrack(queue[i+1].u, queue[i+1].t);
+function startFrom(u,t){
+  const q=queue.slice();
+  const i=q.findIndex(x=>x.u===u);
+  playTrack(u,t,q,i);
 }
+function step(d){
+  if(curIdx<0||!playQueue.length) return;
+  const j=curIdx+d;
+  if(j<0||j>=playQueue.length) return;
+  curIdx=j;
+  playTrack(playQueue[j].u,playQueue[j].t);
+}
+const playNext=()=>step(1), playPrev=()=>step(-1);
+
 document.addEventListener("click",e=>{
+  const d=e.target.closest(".dl");
+  if(d){ const a=lastItems[+d.dataset.dl]; if(a) toggleOffline(a,d); return; }
   const b=e.target.closest(".play,.tr");
-  if(b) playTrack(b.dataset.u, b.dataset.t);
+  if(b) startFrom(b.dataset.u,b.dataset.t);
 });
-paudio.addEventListener("ended",playNext);
+paudio.addEventListener("ended",()=>{ retries=0; playNext(); });
 $("#pnext").onclick=playNext;
-const pseek=$("#pseek"),ptime=$("#ptime"),ppp=$("#ppp");
+$("#pprev").onclick=playPrev;
+
 const fmt=s=>{s=Math.max(0,s|0);const h=(s/3600)|0,m=((s%3600)/60)|0,x=String(s%60).padStart(2,"0");
   return h?`${h}:${String(m).padStart(2,"0")}:${x}`:`${m}:${x}`};
-let seeking=false;
+let seeking=false, lastPosPush=0;
 paudio.addEventListener("timeupdate",()=>{
+  lastPos=paudio.currentTime;
   if(!seeking && paudio.duration) pseek.value=paudio.currentTime/paudio.duration*100;
   ptime.textContent=fmt(paudio.currentTime)+(paudio.duration?" / "+fmt(paudio.duration):"");
+  const now=Date.now();
+  if(now-lastPosPush>1000){ lastPosPush=now; updatePosition(); }
 });
 pseek.addEventListener("input",()=>{
   seeking=true;
@@ -296,25 +483,47 @@ pseek.addEventListener("input",()=>{
 pseek.addEventListener("change",()=>{
   if(paudio.duration) paudio.currentTime=pseek.value/100*paudio.duration;
   seeking=false;
+  updatePosition();
 });
-ppp.onclick=()=>paudio.paused?paudio.play():paudio.pause();
-$("#pback").onclick=()=>{paudio.currentTime=Math.max(0,paudio.currentTime-30)};
-$("#pfwd").onclick=()=>{if(paudio.duration)paudio.currentTime=Math.min(paudio.duration,paudio.currentTime+30)};
-paudio.addEventListener("play",()=>{ppp.textContent="⏸";player.classList.add("spin")});
-paudio.addEventListener("pause",()=>{ppp.textContent="▶";player.classList.remove("spin")});
+ppp.onclick=()=>{ if(paudio.paused) safePlay(); else { wantPlaying=false; paudio.pause(); } };
+const nudge=d=>{ const t=paudio.currentTime+d;
+  paudio.currentTime=Math.max(0,isFinite(paudio.duration)?Math.min(paudio.duration,t):t); updatePosition(); };
+$("#pback").onclick=()=>nudge(-30);
+$("#pfwd").onclick=()=>nudge(30);
+paudio.addEventListener("play",()=>{
+  ppp.textContent="⏸"; player.classList.add("spin");
+  if("mediaSession" in navigator) navigator.mediaSession.playbackState="playing";
+});
+paudio.addEventListener("pause",()=>{
+  ppp.textContent="▶"; player.classList.remove("spin");
+  if("mediaSession" in navigator) navigator.mediaSession.playbackState="paused";
+});
+
 if("mediaSession" in navigator){
-  navigator.mediaSession.setActionHandler("nexttrack",playNext);
-  navigator.mediaSession.setActionHandler("seekbackward",()=>{paudio.currentTime=Math.max(0,paudio.currentTime-30)});
-  navigator.mediaSession.setActionHandler("seekforward",()=>{paudio.currentTime+=30});
+  const H={
+    play:()=>safePlay(),
+    pause:()=>{wantPlaying=false;paudio.pause()},
+    stop:()=>{wantPlaying=false;paudio.pause()},
+    nexttrack:playNext,
+    previoustrack:playPrev,
+    seekbackward:e=>nudge(-(e&&e.seekOffset||30)),
+    seekforward:e=>nudge(e&&e.seekOffset||30),
+    seekto:e=>{ if(e&&e.seekTime!=null){paudio.currentTime=e.seekTime;updatePosition();} }
+  };
+  for(const k in H){ try{ navigator.mediaSession.setActionHandler(k,H[k]); }catch(e){} }
 }
-$("#pclose").onclick=()=>{paudio.pause();player.style.display="none";document.body.style.paddingBottom="0"};
+$("#pclose").onclick=()=>{
+  wantPlaying=false; paudio.pause();
+  player.style.display="none"; document.body.style.paddingBottom="0";
+  if("mediaSession" in navigator) navigator.mediaSession.playbackState="none";
+};
 
 document.querySelectorAll("#kindChips .chip").forEach(c=>{
   c.onclick=()=>{
     if(c.dataset.k==="rand"){
       if(!lastItems.length)return;
       const a=lastItems[Math.floor(Math.random()*lastItems.length)];
-      playTrack(a.mp3[0].url, a.title);
+      startFrom(a.mp3[0].url, a.title);
       return;
     }
     document.querySelectorAll("#kindChips .chip:not(#randBtn)").forEach(x=>x.classList.remove("on"));
@@ -341,6 +550,7 @@ if(MULTI_SEC){
 
 $("#gen").textContent=DATA.generated||"";
 render();
+refreshCached().then(render);
 </script>
 </body>
 </html>
